@@ -80,7 +80,7 @@ The mod passes the permission decision through untouched. It never allows, denie
 
 **No line does not mean safe.** The parser reads the command like a human skimming it. It misses `find -delete`, `bash -c`, aliases, functions, heredocs and scripts. `$VAR`, `$(..)` and `xargs rm` targets are reported as `unresolved` and never expanded, because expanding them would run them.
 
-The pane opens by itself only on a wide terminal (144+ columns). Narrower, run `/blast-radius`.
+The pane opens by itself only on a wide terminal (144+ columns, 110 once you have opened it with `/blast-radius`). Narrower, the line ends in `details: /blast-radius`: run it to see the pane.
 
 ## How it works
 
@@ -128,6 +128,10 @@ claude --plugin-dir /path/to/claude-blast-radius
 
 ```bash
 bun test
+```
+
+```bash
+claude plugin test .   # tests/*.test.ts, against the engine
 ```
 
 ```bash

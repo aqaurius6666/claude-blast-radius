@@ -60,9 +60,17 @@ async function analyze($: EngineInterface, id: string, command: string) {
     errors,
   }
   await update($, report, () => fresh)
-  const dryRuns = previews.length ? `🔍 ${previews.length} dry-run${previews.length === 1 ? '' : 's'} in the Blast radius pane` : ''
-  notice($, id, [removal && '💥 rm: measuring…', dryRuns].filter(Boolean).join(' · '))
-  void $.ui.open({ id: PANE, title: 'Blast radius' })
+  // opened unasked: a narrow terminal (under 144 columns) keeps it undrawn, so the line says how to see it
+  const placed = await $.ui.open({ id: PANE, title: 'Blast radius' }).then(
+    r => r.isPlaced,
+    () => false,
+  )
+  const withHint = (...parts: (string | false | null | undefined)[]) =>
+    [...parts, !placed && 'details: /blast-radius'].filter(Boolean).join(' · ')
+  const dryRuns = previews.length
+    ? `🔍 ${previews.length} dry-run${previews.length === 1 ? '' : 's'}${placed ? ' in the Blast radius pane' : ''}`
+    : ''
+  notice($, id, withHint(removal && '💥 rm: measuring…', dryRuns))
 
   const [cwd, home] = await Promise.all([$.session.cwd(), $.env.get('HOME')])
   const host = hostOf($, cwd, home)
@@ -89,7 +97,7 @@ async function analyze($: EngineInterface, id: string, command: string) {
       await set(r => ({ ...r, previews: r.previews.map((q, j) => (j === i ? { ...q, state: 'done', ...done } : q)) }))
     }),
   )
-  notice($, id, [await rmDone, dryRuns].filter(Boolean).join(' · '))
+  notice($, id, withHint(await rmDone, dryRuns))
 }
 
 export const register: Register = on => {
