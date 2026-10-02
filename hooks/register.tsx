@@ -48,6 +48,33 @@ async function autoOpen($: EngineInterface) {
   return (await $.store.get(AUTO_OPEN).catch(() => undefined)) !== false
 }
 
+// the pane opened unasked for a prompt: closed once that prompt is answered.
+// Module state: a reload starts over, at worst leaving one pane open.
+const pane = { opened: undefined as string | undefined, answered: new Set<string>() }
+
+async function closeFor($: EngineInterface, id: string) {
+  pane.answered.add(id)
+  if (pane.opened !== id) return
+  pane.opened = undefined
+  await $.ui.close({ id: PANE }).catch(() => {})
+}
+
+// opens the pane for prompt `id`, claimed for closing only when it was not open already
+// (opened with `/blast-radius`, or still up for another prompt)
+async function openFor($: EngineInterface, id: string) {
+  const wasOpen = (await $.ui.panes().catch(() => [])).some(p => p.id === PANE)
+  const placed = await $.ui.open({ id: PANE, title: 'Blast radius' }).then(
+    r => r.isPlaced,
+    () => false,
+  )
+  if (!wasOpen) {
+    pane.opened = id
+    // answered while the pane was opening: close it straight away
+    if (pane.answered.has(id)) await closeFor($, id)
+  }
+  return placed
+}
+
 async function analyze($: EngineInterface, id: string, command: string) {
   const removal = parse(command)
   const { rules, errors } = await loadRules($)
@@ -67,12 +94,7 @@ async function analyze($: EngineInterface, id: string, command: string) {
   }
   await update($, report, () => fresh)
   // opened unasked: a narrow terminal (under 144 columns) keeps it undrawn, so the line says how to see it
-  const placed =
-    (await autoOpen($)) &&
-    (await $.ui.open({ id: PANE, title: 'Blast radius' }).then(
-      r => r.isPlaced,
-      () => false,
-    ))
+  const placed = (await autoOpen($)) && (await openFor($, id))
   const withHint = (...parts: (string | false | null | undefined)[]) =>
     [...parts, !placed && 'details: /blast-radius'].filter(Boolean).join(' · ')
   const dryRuns = previews.length
@@ -116,13 +138,13 @@ export const register: Register = on => {
       name: 'blast-radius',
       description: 'Show the Blast radius pane (last previewed command); `off` / `on`: stop / resume opening it by itself',
     })
-    // open from the start: drawn now on a wide terminal, a no-op on a narrow one
-    if (await autoOpen($)) $.ui.open({ id: PANE, title: 'Blast radius' }).catch(() => {})
     return next(e)
   })
 
   on('command.run', { command: 'blast-radius' }, async ($, e) => {
     const arg = e.args.trim().toLowerCase()
+    // asked for: stays open after the prompt it was opened for
+    pane.opened = undefined
     if (arg === 'off') {
       await $.store.set(AUTO_OPEN, false)
       await $.ui.close({ id: PANE }).catch(() => {})
@@ -132,6 +154,15 @@ export const register: Register = on => {
     else if (arg) return { text: `Unknown argument "${arg}": /blast-radius [on|off]` }
     await $.ui.open({ id: PANE, title: 'Blast radius' })
     return { text: arg === 'on' ? 'Blast radius pane opened; it opens by itself again.' : 'Blast radius pane opened.' }
+  })
+
+  // next(e) runs the permission prompt and the tool: once it settles, the prompt is answered
+  on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
+    try {
+      return await next(e)
+    } finally {
+      await closeFor($, e.tool_use_id)
+    }
   })
 
   on('tool.check', { tool: 'Bash' }, async ($, e, next) => {
