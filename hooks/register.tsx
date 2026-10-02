@@ -105,6 +105,8 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'blast-radius', description: 'Show the Blast radius pane (last previewed command)' })
+    // open from the start: drawn now on a wide terminal, a no-op on a narrow one
+    $.ui.open({ id: PANE, title: 'Blast radius' }).catch(() => {})
     return next(e)
   })
 
