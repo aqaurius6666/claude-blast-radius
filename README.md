@@ -110,6 +110,8 @@ sequenceDiagram
 
 Needs function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` where not on by default).
 
+Inside tmux, herdr or another multiplexer, also set `CLAUDE_CODE_NO_FLICKER=1` (for example `export` it in your shell rc). Claude Code otherwise uses its main-screen layout there, where the permission dialog draws over the pane. Fullscreen docks the pane beside the transcript.
+
 ```bash
 claude plugin marketplace add aqaurius6666/claude-blast-radius
 ```
