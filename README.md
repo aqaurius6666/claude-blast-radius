@@ -2,12 +2,12 @@
 
 A Claude Code mod. When a Bash command is about to ask for permission, it shows what the command would destroy, before you answer.
 
-![blast-radius demo: an rm measured under the permission dialog, then a git clean dry-run in the side pane](docs/demo.gif)
+![blast-radius demo: the side pane opens with an rm permission prompt and closes once it is declined, then opens again for a git clean dry-run and closes once approved](docs/demo.gif)
 
 - **Built in:** every `rm` is measured: files, size, and how much git can't bring back.
 - **Your rules:** a regex per command and a read-only dry-run to run when it matches (`git clean -fdx` → `git clean -n -fdx`).
 
-One line goes under the dialog. Details (per path, full dry-run output) go to the **Blast radius** side pane. Nothing reaches the model's context, and the permission decision is never changed.
+One line goes under the dialog. Details (per path, full dry-run output) go to the **Blast radius** side pane, which opens with the prompt and closes once you answer it. Nothing reaches the model's context, and the permission decision is never changed.
 
 ## Quick start
 
@@ -34,7 +34,7 @@ claude plugin install blast-radius@blast-radius
 /blast-radius
 ```
 
-The **Blast radius** pane opens on the right with `Nothing yet: opens when a permission prompt has an rm or matches a rule.` That's it: you are set up.
+The **Blast radius** pane opens on the right with `Nothing yet: opens when a permission prompt has an rm or matches a rule.` That's it: you are set up. From now on the pane opens and closes by itself; this one, opened by hand, stays until you close it.
 
 **4. See it work.** In a throwaway directory, ask Claude to delete something:
 
