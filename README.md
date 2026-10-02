@@ -83,8 +83,9 @@ Worst news first:
 
 ## The pane
 
-- Opens at session start and on each preview, on a terminal **144+ columns** wide (110 once you have opened it yourself with `/blast-radius`). Narrower, the line ends in `details: /blast-radius`.
-- `/blast-radius` opens it and shows the last previewed command.
+- Opens by itself only while it has something to show: when a permission prompt has an `rm` or matches a rule, on a terminal **144+ columns** wide (110 once you have opened it yourself with `/blast-radius`). Narrower, the line ends in `details: /blast-radius`.
+- Closes by itself once that prompt is answered (after the command runs, or when you say no).
+- `/blast-radius` opens it and shows the last previewed command. Opened this way, it stays until you close it.
 - `/blast-radius off` closes it and stops it opening by itself (kept across sessions). The line under the dialog stays. `/blast-radius on` undoes it.
 
 ## Add your own dry-runs
