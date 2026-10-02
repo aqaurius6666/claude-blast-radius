@@ -1,0 +1,14 @@
+{
+  "name": "blast-radius",
+  "description": "Blast radius preview under Claude Code permission dialogs.",
+  "owner": {
+    "name": "nguyen.duy.vu"
+  },
+  "plugins": [
+    {
+      "name": "blast-radius",
+      "source": "./",
+      "description": "When an rm asks for permission, one line under the dialog says what it would delete."
+    }
+  ]
+}

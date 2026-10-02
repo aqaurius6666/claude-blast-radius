@@ -1,0 +1,9 @@
+{
+  "name": "blast-radius",
+  "version": "0.1.0",
+  "description": "When a Bash command asks for permission, preview its blast radius: rm targets measured (files, size, what git can't restore), plus your own regex -> dry-run rules per command in a chain or pipe. A line under the dialog, details in a side pane. Display only: never changes the decision.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "nguyen.duy.vu"
+  }
+}

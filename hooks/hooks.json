@@ -1,0 +1,4 @@
+{
+  "description": "Blast radius preview under permission dialogs, and the Blast radius pane",
+  "modules": ["./register.tsx"]
+}
