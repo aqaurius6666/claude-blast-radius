@@ -60,3 +60,42 @@ describe('rules', () => {
     expect(errors).toHaveLength(2)
   })
 })
+
+describe('examples/rules.json', async () => {
+  const opts = optionsOf([await Bun.file(`${import.meta.dir}/../examples/rules.json`).json()])
+  const { rules, errors } = rulesOf(opts)
+  const argv = (cmd: string) => plans(cmd, rules).map(p => ('argv' in p ? p.argv.join(' ') : `skip: ${p.skip}`))
+
+  test('every example loads', () => {
+    expect(errors).toEqual([])
+    expect(rules).toHaveLength((opts.rules as unknown[]).length)
+  })
+
+  test.each([
+    ['rm -rf build dist', 'ls -la build dist'],
+    ['rm -Rf build', 'ls -la build'],
+    ['kubectl delete pod a -n web', 'kubectl delete pod a -n web --dry-run=server -o name'],
+    ['kubectl apply -f k8s/', 'kubectl diff -f k8s/'],
+    ['kubectl drain node-1 --ignore-daemonsets', 'kubectl get pods -A -o wide --field-selector spec.nodeName=node-1'],
+    ['helm uninstall api -n web', 'helm get manifest api -n web'],
+    ['terraform destroy -auto-approve', 'terraform plan -destroy -no-color'],
+    ['terraform apply', 'terraform plan -no-color'],
+    ['git clean -fdx', 'git clean -n -fdx'],
+    ['git reset --hard origin/main', 'git diff --stat HEAD'],
+    ['git push -f origin main', 'git log --oneline HEAD..@{u}'],
+    ['git push --force-with-lease', 'git log --oneline HEAD..@{u}'],
+    ['git branch -D feat old', 'git log --oneline feat old --not --remotes'],
+    ['git stash clear', 'git stash list'],
+    ['find . -name "*.log" -delete', 'find . -name *.log -print'],
+    ['rsync -a --delete src/ dst/', 'rsync --dry-run --itemize-changes -a --delete src/ dst/'],
+    ['aws s3 rm s3://b/k --recursive', 'aws s3 rm s3://b/k --recursive --dryrun'],
+    ['docker system prune -af', 'docker system df'],
+  ])('%s → %s', (cmd, want) => {
+    expect(argv(cmd)).toEqual([want])
+  })
+
+  test('leaves look-alikes alone', () => {
+    for (const cmd of ['rm a', 'kubectl get pods', 'terraform apply plan.out', 'git push origin main', 'git stash pop', 'find . -name x', 'rsync -a a b'])
+      expect(argv(cmd)).toEqual([])
+  })
+})

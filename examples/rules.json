@@ -1,0 +1,57 @@
+{
+  "pluginConfigs": {
+    "blast-radius": {
+      "options": {
+        "rules": ["rmls", "kdel", "kapply", "kdrain", "helmun", "tfd", "tfa", "gclean", "greset", "gpushf", "gbdel", "gstash", "findrm", "rsyncd", "s3rm", "dprune"],
+
+        "rmls.match": "^rm -[a-zA-Z]*[rR][a-zA-Z]* (.+)$",
+        "rmls.preview": "ls -la $1",
+
+        "kdel.match": "^kubectl delete (.+)$",
+        "kdel.preview": "kubectl delete $1 --dry-run=server -o name",
+
+        "kapply.match": "^kubectl apply (.+)$",
+        "kapply.preview": "kubectl diff $1",
+
+        "kdrain.match": "^kubectl drain (\\S+)",
+        "kdrain.preview": "kubectl get pods -A -o wide --field-selector spec.nodeName=$1",
+
+        "helmun.match": "^helm (?:uninstall|delete) (.+)$",
+        "helmun.preview": "helm get manifest $1",
+
+        "tfd.match": "^terraform destroy\\b",
+        "tfd.preview": "terraform plan -destroy -no-color",
+
+        "tfa.match": "^terraform apply$",
+        "tfa.preview": "terraform plan -no-color",
+
+        "gclean.match": "^git clean (.+)$",
+        "gclean.preview": "git clean -n $1",
+
+        "greset.match": "^git reset --hard\\b",
+        "greset.preview": "git diff --stat HEAD",
+
+        "gpushf.match": "^git push\\b.* (?:-f|--force|--force-with-lease)\\b",
+        "gpushf.preview": "git log --oneline HEAD..@{u}",
+
+        "gbdel.match": "^git branch -D (.+)$",
+        "gbdel.preview": "git log --oneline $1 --not --remotes",
+
+        "gstash.match": "^git stash (?:drop|clear)\\b",
+        "gstash.preview": "git stash list",
+
+        "findrm.match": "^find (.+) -delete$",
+        "findrm.preview": "find $1 -print",
+
+        "rsyncd.match": "^rsync (.*--delete.*)$",
+        "rsyncd.preview": "rsync --dry-run --itemize-changes $1",
+
+        "s3rm.match": "^aws s3 (rm|mv|sync) (.+)$",
+        "s3rm.preview": "aws s3 $1 $2 --dryrun",
+
+        "dprune.match": "^docker (?:system|image|container|volume) prune\\b",
+        "dprune.preview": "docker system df"
+      }
+    }
+  }
+}

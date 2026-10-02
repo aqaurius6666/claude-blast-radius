@@ -52,6 +52,26 @@ Add them to any `settings.json` (user, project or local) under `pluginConfigs.bl
 - `preview` fills `$0`-`$9` from the match, then splits into words the way the shell would (quotes kept). It runs in the directory a `cd` earlier in the chain left, 10 s at most.
 - Settings are read on every prompt: edits apply without a reload.
 
+More ready-made rules, each covered by a test, in [`examples/rules.json`](examples/rules.json). Copy the ones you want:
+
+| Command | Preview |
+| --- | --- |
+| `rm -rf a b` | `ls -la a b` |
+| `kubectl delete …` | `kubectl delete … --dry-run=server -o name` |
+| `kubectl apply …` | `kubectl diff …` |
+| `kubectl drain NODE` | pods on `NODE` |
+| `helm uninstall REL …` | `helm get manifest REL …` |
+| `terraform destroy` / `apply` | `terraform plan [-destroy]` |
+| `git clean …` | `git clean -n …` |
+| `git reset --hard` | `git diff --stat HEAD` |
+| `git push -f` | upstream commits the push drops (`HEAD..@{u}`, as of the last fetch) |
+| `git branch -D B` | commits of `B` on no remote |
+| `git stash drop` / `clear` | `git stash list` |
+| `find … -delete` | `find … -print` |
+| `rsync … --delete …` | `rsync --dry-run --itemize-changes …` |
+| `aws s3 rm` / `mv` / `sync` | same with `--dryrun` |
+| `docker … prune` | `docker system df` |
+
 > ⚠ **A preview runs without asking**, every time its rule matches a prompt. Make it read-only. The mod refuses a preview when, after filling in, it would chain commands (`;` `|` `&`), still holds `$VAR` or `$(..)` (so a captured `$(curl ..)` never runs), or starts with a shell or wrapper (`sh`, `bash`, `env`, `sudo`, `xargs`, `python`, ...). It runs by argv, never through a shell. It cannot know whether your program writes.
 
 ## Display only, never a gate
