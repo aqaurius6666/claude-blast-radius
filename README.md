@@ -82,6 +82,8 @@ The mod passes the permission decision through untouched. It never allows, denie
 
 The pane opens at session start and on each preview, but is drawn by itself only on a wide terminal (144+ columns, 110 once you have opened it with `/blast-radius`). Narrower, the line ends in `details: /blast-radius`: run it to see the pane.
 
+`/blast-radius off` closes the pane and stops it opening by itself (kept across sessions); the line under the dialog stays. `/blast-radius on` undoes it.
+
 ## How it works
 
 ```mermaid
