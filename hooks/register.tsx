@@ -14,6 +14,8 @@ import { absolute, probe, type Host } from './probe'
 import { optionsOf, plan, rulesOf, SOURCES } from './rules'
 
 const PANE = 'blast-radius'
+// `/blast-radius off` stores false: the pane then opens only when asked for
+const AUTO_OPEN = 'autoOpen'
 const report = atom({ plugin: 'blast-radius', key: 'report' } as const, null)
 
 const PREVIEW_MS = 10_000
@@ -42,6 +44,10 @@ async function loadRules($: EngineInterface) {
   return rulesOf(optionsOf(sources))
 }
 
+async function autoOpen($: EngineInterface) {
+  return (await $.store.get(AUTO_OPEN).catch(() => undefined)) !== false
+}
+
 async function analyze($: EngineInterface, id: string, command: string) {
   const removal = parse(command)
   const { rules, errors } = await loadRules($)
@@ -61,10 +67,12 @@ async function analyze($: EngineInterface, id: string, command: string) {
   }
   await update($, report, () => fresh)
   // opened unasked: a narrow terminal (under 144 columns) keeps it undrawn, so the line says how to see it
-  const placed = await $.ui.open({ id: PANE, title: 'Blast radius' }).then(
-    r => r.isPlaced,
-    () => false,
-  )
+  const placed =
+    (await autoOpen($)) &&
+    (await $.ui.open({ id: PANE, title: 'Blast radius' }).then(
+      r => r.isPlaced,
+      () => false,
+    ))
   const withHint = (...parts: (string | false | null | undefined)[]) =>
     [...parts, !placed && 'details: /blast-radius'].filter(Boolean).join(' · ')
   const dryRuns = previews.length
@@ -104,13 +112,26 @@ export const register: Register = on => {
   const seen = new Set<string>()
 
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'blast-radius', description: 'Show the Blast radius pane (last previewed command)' })
+    await $.command.register({
+      name: 'blast-radius',
+      description: 'Show the Blast radius pane (last previewed command); `off` / `on`: stop / resume opening it by itself',
+    })
+    // open from the start: drawn now on a wide terminal, a no-op on a narrow one
+    if (await autoOpen($)) $.ui.open({ id: PANE, title: 'Blast radius' }).catch(() => {})
     return next(e)
   })
 
-  on('command.run', { command: 'blast-radius' }, async $ => {
+  on('command.run', { command: 'blast-radius' }, async ($, e) => {
+    const arg = e.args.trim().toLowerCase()
+    if (arg === 'off') {
+      await $.store.set(AUTO_OPEN, false)
+      await $.ui.close({ id: PANE }).catch(() => {})
+      return { text: 'Blast radius pane closed; it no longer opens by itself. `/blast-radius on` to undo.' }
+    }
+    if (arg === 'on') await $.store.set(AUTO_OPEN, true)
+    else if (arg) return { text: `Unknown argument "${arg}": /blast-radius [on|off]` }
     await $.ui.open({ id: PANE, title: 'Blast radius' })
-    return { text: 'Blast radius pane opened.' }
+    return { text: arg === 'on' ? 'Blast radius pane opened; it opens by itself again.' : 'Blast radius pane opened.' }
   })
 
   on('tool.check', { tool: 'Bash' }, async ($, e, next) => {
