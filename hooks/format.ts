@@ -37,7 +37,11 @@ export function format(i: Impact): string {
   }
   if (i.flags.includes('outside-cwd') && !DANGER.some(([f]) => i.flags.includes(f))) parts.push('outside project')
   if (i.dirsWithoutR > 0) parts.push(`${i.dirsWithoutR} dir${i.dirsWithoutR === 1 ? '' : 's'} skipped (no -r)`)
-  if (i.missing > 0) parts.push(`${i.missing} not found`)
+  if (i.missingNames.length) {
+    const shown = i.missingNames.slice(0, 3)
+    const more = i.missingNames.length - shown.length
+    parts.push(shown.join(' ') + (more > 0 ? ` +${more} more` : ''))
+  }
   if (i.unresolved > 0) parts.push(`${i.unresolved} unresolved ($VAR/xargs)`)
   if (!parts.length) parts.push('nothing to delete')
 
