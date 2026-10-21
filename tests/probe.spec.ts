@@ -85,9 +85,15 @@ describe('probe', () => {
   test('unresolved, missing, dir without -r', async () => {
     const { h, argvs } = host({ '/p/d': { kind: 'dir', size: 1, isLink: false } }, undefined)
     const i = await run(h, 'rm $(curl evil) nope d')
-    expect(i).toMatchObject({ unresolved: 1, missing: 1, dirsWithoutR: 1, files: 0 })
+    expect(i).toMatchObject({ unresolved: 1, missing: 1, missingNames: ['nope'], dirsWithoutR: 1, files: 0 })
     expect(argvs).toEqual([])
-    expect(format(i)).toBe('💥 rm: 1 dir skipped (no -r) · 1 not found · 1 unresolved ($VAR/xargs)')
+    expect(format(i)).toBe('💥 rm: 1 dir skipped (no -r) · nope · 1 unresolved ($VAR/xargs)')
+  })
+
+  test('file made in the same command: shown by name', async () => {
+    const { h } = host({}, undefined)
+    expect(format(await run(h, 'touch out.txt && rm out.txt'))).toBe('💥 rm: out.txt')
+    expect(format(await run(h, 'rm a b c d *.zip'))).toBe('💥 rm: a b c +2 more')
   })
 
   test('size', () => {

@@ -20,6 +20,8 @@ export type Impact = {
   recursive: boolean
   paths: number
   missing: number
+  // as typed: often made earlier in the same command (touch a && rm a), so shown by name
+  missingNames: string[]
   unresolved: number
   dirsWithoutR: number
   files: number
@@ -130,6 +132,7 @@ export async function probe(host: Host, removal: Removal): Promise<Impact> {
     recursive: removal.recursive,
     paths: 0,
     missing: 0,
+    missingNames: [],
     unresolved: 0,
     dirsWithoutR: 0,
     files: 0,
@@ -145,6 +148,12 @@ export async function probe(host: Host, removal: Removal): Promise<Impact> {
   }
 
   const paths = new Set<string>()
+  // targets as typed, to name the missing ones in order
+  const typed: { text: string; path?: string }[] = []
+  const miss = (name: string) => {
+    impact.missing++
+    if (!impact.missingNames.includes(name)) impact.missingNames.push(name)
+  }
   for (const t of removal.targets) {
     const abs = t.dynamic || t.dir === undefined ? undefined : absolute(host, t.dir, t.text)
     if (!abs) {
@@ -153,19 +162,21 @@ export async function probe(host: Host, removal: Removal): Promise<Impact> {
     }
     if (!t.glob) {
       paths.add(abs)
+      typed.push({ text: t.text, path: abs })
       continue
     }
     const hits = await expand(host, abs)
     if (!hits) impact.unresolved++
-    else if (!hits.length) impact.missing++
+    else if (!hits.length) typed.push({ text: t.text })
     else hits.forEach(p => paths.add(p))
   }
 
   const flags = new Set<Flag>()
+  const gone = new Set<string>()
   await Promise.all(
     [...paths].slice(0, MAX_PATHS).map(async path => {
       const st = await host.stat(path).catch(() => undefined)
-      if (!st) return void impact.missing++
+      if (!st) return void gone.add(path)
       impact.paths++
       const isDir = st.kind === 'dir' && !st.isLink
       if (isDir && !removal.recursive) return void impact.dirsWithoutR++
@@ -200,6 +211,7 @@ export async function probe(host: Host, removal: Removal): Promise<Impact> {
       impact.ignored += Math.max(0, files - git.tracked - git.untracked)
     }),
   )
+  for (const t of typed) if (!t.path || gone.has(t.path)) miss(t.text)
   if (paths.size > MAX_PATHS) impact.unresolved += paths.size - MAX_PATHS
   impact.flags = [...flags]
   return impact
